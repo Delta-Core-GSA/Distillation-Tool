@@ -13,12 +13,26 @@ from typing import Dict, List, Set, Any
 
 
 class BaseDatasetAdapter:
+    """
+    Adapter class for managing different types of datasets (image, text, tabular).
+    Handles data loading, tokenization, label mapping, and dynamic input filtering.
+    """
+    
     def __init__(self, csv_path, tokenizer_name=None, max_samples=None, imagenet_mapping_path=None):
+        """
+        Initialize the dataset adapter.
+        
+        Args:
+            csv_path: Path to the CSV file containing the dataset
+            tokenizer_name: Name of the HuggingFace tokenizer to use
+            max_samples: Maximum number of samples to load (for testing/debugging)
+            imagenet_mapping_path: Path to ImageNet label mapping JSON file
+        """
         self.csv_path = csv_path
         self.df = pd.read_csv(csv_path)
         self.imagenet_mapping_path = imagenet_mapping_path
         
-        # NUOVO: Set per tracciare input supportati e capacità tokenizer
+        # Track which inputs are supported by the model and tokenizer capabilities
         self.supported_inputs = None
         self.tokenizer_capabilities = None
 
@@ -30,30 +44,32 @@ class BaseDatasetAdapter:
         self.mode = self.infer_mode()
         print(f"[INFO] Inferred mode: {self.mode}")
         
-        # Inizializza tokenizer
+        # Initialize tokenizer if provided
         self.tokenizer = None
         if tokenizer_name:
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-            # NUOVO: Rileva capacità tokenizer dopo averlo caricato
             self.tokenizer_capabilities = self._detect_tokenizer_capabilities()
 
-        # Gestione mapping label (ImageNet o generico)
+        # Setup label mapping (ImageNet or automatic)
         self.setup_label_mapping()
 
     def _detect_tokenizer_capabilities(self) -> Dict[str, bool]:
         """
-        NUOVO: Rileva dinamicamente le capacità del tokenizer
+        Dynamically detect which outputs the tokenizer can generate.
+        Tests tokenizer to determine which keys it produces (input_ids, attention_mask, etc).
+        
+        Returns:
+            Dictionary mapping output keys to boolean indicating if tokenizer supports them
         """
         if not self.tokenizer:
             return {}
             
-        print(f"[DATASET] Rilevando capacità tokenizer...")
+        print(f"[DATASET] Detecting tokenizer capabilities...")
         
         test_texts = ["This is a test sentence."]
         capabilities = {}
         
         try:
-            # Test tokenizzazione base
             base_output = self.tokenizer(
                 test_texts,
                 return_tensors="pt",
@@ -62,16 +78,16 @@ class BaseDatasetAdapter:
                 max_length=64
             )
             
-            # Verifica quali output sono generati
+            # Check which outputs are generated
             for key in ['input_ids', 'attention_mask', 'token_type_ids', 'position_ids']:
                 capabilities[key] = key in base_output
                 if capabilities[key]:
-                    print(f"[DATASET] ✅ Tokenizer genera: {key}")
+                    print(f"[DATASET] Tokenizer generates: {key}")
             
             return capabilities
             
         except Exception as e:
-            print(f"[DATASET] ❌ Errore rilevamento tokenizer: {e}")
+            print(f"[DATASET] Error detecting tokenizer: {e}")
             return {
                 'input_ids': True,
                 'attention_mask': True,
@@ -81,91 +97,101 @@ class BaseDatasetAdapter:
     
     def set_supported_inputs(self, supported_inputs: Set[str]):
         """
-        NUOVO: Imposta quali input sono supportati dai modelli
-        Chiamato dal TaskHandler dopo il rilevamento dinamico
+        Set which inputs are supported by the models.
+        Called by TaskHandler after dynamic detection.
+        
+        Args:
+            supported_inputs: Set of input keys that the model accepts
         """
         self.supported_inputs = supported_inputs
-        print(f"[DATASET] Input supportati impostati: {sorted(supported_inputs)}")
+        print(f"[DATASET] Supported inputs set: {sorted(supported_inputs)}")
 
     def setup_label_mapping(self):
         """
-        Configura il mapping delle label - può essere specifico per ImageNet o generico
+        Configure label mapping - can be ImageNet-specific or automatically generated.
         """
         if self.imagenet_mapping_path and os.path.exists(self.imagenet_mapping_path):
-            print(f"[INFO] Caricamento mapping ImageNet da: {self.imagenet_mapping_path}")
+            print(f"[INFO] Loading ImageNet mapping from: {self.imagenet_mapping_path}")
             self.load_imagenet_mapping()
         else:
-            print(f"[INFO] Creazione mapping automatico dalle label del dataset")
+            print(f"[INFO] Creating automatic mapping from dataset labels")
             self.create_automatic_mapping()
         
-        # Applica il mapping al DataFrame
         self.apply_label_mapping()
 
     def get_dataset_info(self):
         """
-        Ritorna informazioni essenziali del dataset
+        Return essential dataset information.
+        
+        Returns:
+            Dictionary containing number of classes, class names, label mapping, task type, and sample count
         """
         return {
             'num_classes': len(self.label_to_idx),
             'class_names': list(self.label_to_idx.keys()),
             'label_mapping': self.label_to_idx,
-            'task_type': self.mode,  # "text", "image", "tabular"
+            'task_type': self.mode,
             'num_samples': len(self.df)
         }
 
     def load_imagenet_mapping(self):
         """
-        Carica il mapping ImageNet da file JSON
+        Load ImageNet mapping from JSON file.
+        Expects file with 'label_to_idx' and 'idx_to_label' dictionaries.
         """
         with open(self.imagenet_mapping_path, 'r') as f:
             mapping_data = json.load(f)
         
         self.label_to_idx = mapping_data.get('label_to_idx', {})
         self.idx_to_label = mapping_data.get('idx_to_label', {})
-        # Converti le chiavi numeriche di idx_to_label in int
+        # Convert numeric keys of idx_to_label to int
         self.idx_to_label = {int(k): v for k, v in self.idx_to_label.items()}
         
-        print(f"[INFO] Mapping ImageNet caricato: {len(self.label_to_idx)} classi")
+        print(f"[INFO] ImageNet mapping loaded: {len(self.label_to_idx)} classes")
 
     def create_automatic_mapping(self):
         """
-        Crea mapping automatico dalle label uniche nel dataset
+        Create automatic mapping from unique labels in the dataset.
+        Assigns sequential indices to sorted unique labels.
         """
         unique_labels = self.df.iloc[:, 1].unique()
         self.label_to_idx = {}
         self.idx_to_label = {}
         
         for idx, label in enumerate(sorted(unique_labels)):
-            self.label_to_idx[str(label)] = idx  # Assicura che sia stringa
+            self.label_to_idx[str(label)] = idx
             self.idx_to_label[idx] = str(label)
         
-        print(f"[INFO] Mapping automatico creato: {len(unique_labels)} classi")
+        print(f"[INFO] Automatic mapping created: {len(unique_labels)} classes")
 
     def apply_label_mapping(self):
         """
-        Applica il mapping delle label al DataFrame
+        Apply label mapping to the DataFrame.
+        Converts string labels to numeric indices using the mapping.
         """
-        # Converte le label in stringhe per il mapping
+        # Convert labels to strings for mapping
         self.df.iloc[:, 1] = self.df.iloc[:, 1].astype(str)
         
-        # Applica il mapping
         original_labels = self.df.iloc[:, 1].copy()
         mapped_labels = self.df.iloc[:, 1].map(self.label_to_idx)
         
-        # Controlla se ci sono label non mappate
+        # Check for unmapped labels
         unmapped_mask = mapped_labels.isna()
         if unmapped_mask.any():
             unmapped_labels = original_labels[unmapped_mask].unique()
-            print(f"[WARNING] Label non mappate trovate: {unmapped_labels[:10]}...")  # Mostra prime 10
-            # Assegna 0 alle label non mappate (o potresti voler gestire diversamente)
+            print(f"[WARNING] Unmapped labels found: {unmapped_labels[:10]}...")
+            # Assign 0 to unmapped labels
             mapped_labels = mapped_labels.fillna(0)
         
         self.df.iloc[:, 1] = mapped_labels.astype(int)
-        print(f"[INFO] Label mappate con successo. Range: {mapped_labels.min()}-{mapped_labels.max()}")
+        print(f"[INFO] Labels mapped successfully. Range: {mapped_labels.min()}-{mapped_labels.max()}")
 
     def save_mapping(self, output_path):
         """
-        Salva il mapping corrente in un file JSON
+        Save current mapping to a JSON file.
+        
+        Args:
+            output_path: Path where the mapping JSON will be saved
         """
         mapping_data = {
             'label_to_idx': self.label_to_idx,
@@ -177,9 +203,15 @@ class BaseDatasetAdapter:
         with open(output_path, 'w') as f:
             json.dump(mapping_data, f, indent=2)
         
-        print(f"[INFO] Mapping salvato in: {output_path}")
+        print(f"[INFO] Mapping saved to: {output_path}")
 
     def infer_mode(self):
+        """
+        Infer dataset mode (image, text, or tabular) based on first column content.
+        
+        Returns:
+            String indicating mode: "image", "text", or "tabular"
+        """
         first_col = self.df.iloc[:, 0].astype(str)
         if first_col.str.contains(r'\.(jpg|jpeg|png)$', case=False).any():
             return "image"
@@ -191,6 +223,12 @@ class BaseDatasetAdapter:
             return "tabular"
 
     def get_dataloader(self):
+        """
+        Get appropriate DataLoader based on inferred mode.
+        
+        Returns:
+            PyTorch DataLoader for the detected dataset type
+        """
         if self.mode == "image":
             return self.get_image_loader()
         elif self.mode == "text":
@@ -199,7 +237,13 @@ class BaseDatasetAdapter:
             return self.get_tabular_loader()
 
     def get_image_loader(self):
-        # Trasformazioni standard per ImageNet
+        """
+        Create DataLoader for image datasets.
+        Applies standard ImageNet transformations (resize, normalize).
+        
+        Returns:
+            DataLoader with image preprocessing pipeline
+        """
         transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
@@ -220,16 +264,16 @@ class BaseDatasetAdapter:
                 
                 try:
                     if img_path.startswith("data:image"):
-                        # Gestione base64
+                        # Handle base64 encoded images
                         image = Image.open(io.BytesIO(base64.b64decode(img_path.split(",")[1]))).convert("RGB")
                     elif os.path.exists(img_path):
-                        # Gestione file path
+                        # Handle file paths
                         image = Image.open(img_path).convert("RGB")
                     else:
-                        print(f"[WARNING] File non trovato: {img_path}")
+                        print(f"[WARNING] File not found: {img_path}")
                         image = Image.new('RGB', (224, 224), color='gray')
                 except Exception as e:
-                    print(f"[ERROR] Errore caricamento immagine {img_path}: {e}")
+                    print(f"[ERROR] Error loading image {img_path}: {e}")
                     image = Image.new('RGB', (224, 224), color='gray')
                 
                 if self.transform:
@@ -251,7 +295,11 @@ class BaseDatasetAdapter:
 
     def get_text_loader(self):
         """
-        AGGIORNATO: Text loader con filtraggio dinamico degli input
+        Create DataLoader for text datasets with dynamic input filtering.
+        Tokenizes text and filters outputs based on model's supported inputs.
+        
+        Returns:
+            DataLoader with custom collate function for text tokenization
         """
         if not self.tokenizer:
             raise ValueError("Tokenizer is required for text mode.")
@@ -270,7 +318,7 @@ class BaseDatasetAdapter:
         def dynamic_collate_fn(batch):
             texts, labels = zip(*batch)
             
-            # Tokenizza con tutti i parametri possibili
+            # Tokenize with all possible parameters
             tokenized = self.tokenizer(
                 list(texts),
                 return_tensors="pt",
@@ -280,14 +328,14 @@ class BaseDatasetAdapter:
                 add_special_tokens=True
             )
             
-            # NUOVO: Filtraggio dinamico basato su input supportati
+            # Dynamic filtering based on supported inputs
             if self.supported_inputs is not None:
                 filtered_tokenized = self._filter_tokenizer_output(tokenized)
             else:
-                # Fallback: usa strategia conservativa
+                # Fallback: use conservative strategy
                 filtered_tokenized = self._conservative_filter(tokenized)
             
-            # Aggiungi labels
+            # Add labels
             filtered_tokenized['labels'] = torch.tensor(labels)
             
             return filtered_tokenized
@@ -301,64 +349,69 @@ class BaseDatasetAdapter:
     
     def _filter_tokenizer_output(self, tokenized_output: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """
-        NUOVO: Filtra l'output del tokenizer basandosi sugli input supportati
+        Filter tokenizer output based on model's supported inputs.
+        
+        Args:
+            tokenized_output: Raw tokenizer output dictionary
+            
+        Returns:
+            Filtered dictionary containing only supported input keys
         """
         filtered_output = {}
-        '''
-        print(f"[DATASET] Filtraggio output tokenizer...")
-        print(f"[DATASET] Output tokenizer: {list(tokenized_output.keys())}")
-        print(f"[DATASET] Input supportati: {sorted(self.supported_inputs)}")
-        '''
 
         for key, tensor in tokenized_output.items():
             if key in self.supported_inputs:
                 filtered_output[key] = tensor
-                #print(f"[DATASET] ✅ Mantenuto: {key}")
-            #else:
-                #print(f"[DATASET] ❌ Rimosso: {key} (non supportato)")
         
-        # Verifica che ci siano almeno gli input essenziali
+        # Ensure essential inputs are present
         essential_inputs = ['input_ids', 'attention_mask']
         for essential in essential_inputs:
             if essential not in filtered_output and essential in tokenized_output:
-                #print(f"[DATASET] ⚠️ Aggiungendo input essenziale: {essential}")
                 filtered_output[essential] = tokenized_output[essential]
         
         return filtered_output
     
     def _conservative_filter(self, tokenized_output: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """
-        NUOVO: Strategia conservativa quando non si conoscono gli input supportati
-        Usa solo input universalmente supportati
-        """
-        print(f"[DATASET] Usando filtro conservativo...")
+        Conservative filtering strategy when supported inputs are unknown.
+        Uses only universally supported inputs.
         
-        # Input che funzionano con la maggior parte dei modelli
+        Args:
+            tokenized_output: Raw tokenizer output dictionary
+            
+        Returns:
+            Dictionary with safe, universally supported inputs
+        """
+        print(f"[DATASET] Using conservative filter...")
+        
+        # Inputs that work with most models
         safe_inputs = ['input_ids', 'attention_mask']
         
         filtered_output = {}
         for key in safe_inputs:
             if key in tokenized_output:
                 filtered_output[key] = tokenized_output[key]
-                print(f"[DATASET] ✅ Input sicuro incluso: {key}")
+                print(f"[DATASET] Safe input included: {key}")
         
-        # Controlla se possiamo includere token_type_ids basandoci sul tokenizer
+        # Check if we can include token_type_ids based on tokenizer capabilities
         if (self.tokenizer_capabilities and 
             self.tokenizer_capabilities.get('token_type_ids', False) and
             'token_type_ids' in tokenized_output):
             
-            # Test rapido per vedere se il tokenizer supporta davvero token_type_ids
             if self._test_token_type_ids_support():
                 filtered_output['token_type_ids'] = tokenized_output['token_type_ids']
-                print(f"[DATASET] ✅ token_type_ids incluso (testato)")
+                print(f"[DATASET] token_type_ids included (tested)")
             else:
-                print(f"[DATASET] ❌ token_type_ids escluso (test fallito)")
+                print(f"[DATASET] token_type_ids excluded (test failed)")
         
         return filtered_output
     
     def _test_token_type_ids_support(self) -> bool:
         """
-        NUOVO: Testa se il tokenizer genera realmente token_type_ids validi
+        Test if tokenizer actually generates valid token_type_ids.
+        
+        Returns:
+            True if tokenizer properly supports token_type_ids, False otherwise
         """
         try:
             test_output = self.tokenizer(
@@ -370,22 +423,25 @@ class BaseDatasetAdapter:
             )
             
             if 'token_type_ids' in test_output:
-                # Verifica che non siano tutti zeri (che indicherebbe un placeholder)
                 token_type_ids = test_output['token_type_ids']
-                
-                # Per BERT-like models, potrebbero essere tutti 0 per singole frasi
-                # Ma dovrebbero esistere come tensor valido
+                # Verify shape matches input_ids
                 is_valid_shape = token_type_ids.shape == test_output['input_ids'].shape
-                
                 return is_valid_shape
             
             return False
             
         except Exception as e:
-            print(f"[DATASET] Test token_type_ids fallito: {e}")
+            print(f"[DATASET] token_type_ids test failed: {e}")
             return False
 
     def get_tabular_loader(self):
+        """
+        Create DataLoader for tabular datasets.
+        Assumes all columns except last are features, last column is label.
+        
+        Returns:
+            DataLoader for tabular data
+        """
         class TabularDataset(Dataset):
             def __init__(self, df):
                 self.x = torch.tensor(df.iloc[:, :-1].values, dtype=torch.float32)
@@ -401,15 +457,17 @@ class BaseDatasetAdapter:
 
     def get_generation_loader(self):
         """
-        DataLoader specifico per text generation task
-        Assume che il dataset abbia input text nella prima colonna e target text nella seconda
+        Create DataLoader for text generation tasks.
+        Assumes first column is input text, second column is target text.
+        
+        Returns:
+            DataLoader with input-target pairs for generation
         """
         if not self.tokenizer:
             raise ValueError("Tokenizer is required for generation mode.")
 
         class GenerationDataset(Dataset):
             def __init__(self, df):
-                # Assumiamo che il dataset abbia input e target text
                 self.inputs = df.iloc[:, 0].astype(str).tolist()
                 self.targets = df.iloc[:, 1].astype(str).tolist()
             
@@ -457,19 +515,23 @@ class BaseDatasetAdapter:
 
     def get_num_classes(self):
         """
-        Ritorna il numero di classi
+        Get the number of classes in the dataset.
+        
+        Returns:
+            Integer number of unique classes
         """
         return len(self.label_to_idx)
 
     def print_mapping_info(self):
         """
-        Stampa informazioni sul mapping delle classi
+        Print detailed information about class mapping.
+        Shows number of classes, index range, and sample mappings.
         """
         print(f"[INFO] === MAPPING INFO ===")
         print(f"Numero classi: {len(self.label_to_idx)}")
         print(f"Range indici: 0 - {len(self.label_to_idx) - 1}")
         
-        # Mostra alcuni esempi di mapping
+        # Show some mapping examples
         sample_size = min(10, len(self.label_to_idx))
         sample_items = list(self.label_to_idx.items())[:sample_size]
         print(f"Esempi mapping (primi {sample_size}):")
@@ -477,14 +539,16 @@ class BaseDatasetAdapter:
             print(f"  '{label}' -> {idx}")
         print(f"[INFO] ====================")
 
-    # =================== METODI DEBUG E DIAGNOSTICA ===================
-    
     def debug_tokenizer_compatibility(self, sample_texts: List[str] = None):
         """
-        NUOVO: Debug completo della compatibilità tokenizer
+        Debug tokenizer compatibility with various configurations.
+        Tests different tokenizer settings to verify proper functionality.
+        
+        Args:
+            sample_texts: Optional list of test texts. Uses default samples if None.
         """
         if not self.tokenizer:
-            print("❌ Nessun tokenizer disponibile")
+            print("No tokenizer available")
             return
         
         if sample_texts is None:
@@ -494,12 +558,12 @@ class BaseDatasetAdapter:
                 "Another example text."
             ]
         
-        print(f"\n🔍 DEBUG TOKENIZER COMPATIBILITY")
+        print(f"\nDEBUG TOKENIZER COMPATIBILITY")
         print(f"Tokenizer: {getattr(self.tokenizer, 'name_or_path', 'Unknown')}")
         print("-" * 50)
         
         try:
-            # Test con parametri diversi
+            # Test with different parameters
             test_configs = [
                 {"padding": True, "truncation": True, "max_length": 64},
                 {"padding": True, "truncation": True, "max_length": 128, "add_special_tokens": True},
@@ -515,19 +579,22 @@ class BaseDatasetAdapter:
                         **config
                     )
                     
-                    print(f"  ✅ Output keys: {list(output.keys())}")
+                    print(f"  Output keys: {list(output.keys())}")
                     for key, tensor in output.items():
                         print(f"    {key}: {tensor.shape}")
                         
                 except Exception as e:
-                    print(f"  ❌ Config failed: {e}")
+                    print(f"  Config failed: {e}")
         
         except Exception as e:
-            print(f"❌ Debug failed: {e}")
+            print(f"Debug failed: {e}")
     
     def get_tokenizer_report(self) -> Dict[str, Any]:
         """
-        NUOVO: Report completo del tokenizer
+        Generate comprehensive tokenizer report.
+        
+        Returns:
+            Dictionary containing tokenizer name, capabilities, supported inputs, vocab size, and max length
         """
         if not self.tokenizer:
             return {"error": "No tokenizer available"}
@@ -543,17 +610,23 @@ class BaseDatasetAdapter:
         return report
 
 
-# ===== FUNZIONI DI UTILITÀ PER IMAGENET =====
-
 def create_imagenet_mapping_from_train_dir(train_dir, output_path):
     """
-    Crea il mapping ImageNet dalle cartelle di training
+    Create ImageNet mapping from training directory structure.
+    Each subdirectory name becomes a class label.
+    
+    Args:
+        train_dir: Path to training directory containing class subdirectories
+        output_path: Path where mapping JSON will be saved
+        
+    Returns:
+        Dictionary containing the created mapping
     """
     if not os.path.exists(train_dir):
-        raise FileNotFoundError(f"Directory train non trovata: {train_dir}")
+        raise FileNotFoundError(f"Train directory not found: {train_dir}")
     
     class_dirs = [d for d in os.listdir(train_dir) if os.path.isdir(os.path.join(train_dir, d))]
-    class_dirs.sort()  # Ordinamento consistente
+    class_dirs.sort()
     
     label_to_idx = {}
     idx_to_label = {}
@@ -573,13 +646,19 @@ def create_imagenet_mapping_from_train_dir(train_dir, output_path):
     with open(output_path, 'w') as f:
         json.dump(mapping_data, f, indent=2)
     
-    print(f"[INFO] Mapping ImageNet creato: {len(class_dirs)} classi -> {output_path}")
+    print(f"[INFO] ImageNet mapping created: {len(class_dirs)} classes -> {output_path}")
     return mapping_data
 
 
 def count_classes(csv_path):
     """
-    Funzione helper veloce per contare classi senza creare adapter
+    Quick helper function to count unique classes in a CSV without creating adapter.
+    
+    Args:
+        csv_path: Path to CSV file
+        
+    Returns:
+        Integer number of unique classes in second column
     """
     import pandas as pd
     df = pd.read_csv(csv_path)

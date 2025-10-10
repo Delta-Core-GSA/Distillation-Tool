@@ -1,14 +1,26 @@
-# =================== TEXT CLASSIFICATION TASK - VERSIONE UNIFICATA ===================
-# File: dataset_by_tasking/text_classification.py
-
 from typing import Dict, Any, Set
 from dataset_by_tasking.base_task import BaseTask
 from dataset_by_tasking.task_type import TaskType
 import torch
 from torch.utils.data import DataLoader
 
+
 class TextClassificationTask(BaseTask):
+    """
+    Text classification task with automatic input compatibility detection.
+    Dynamically detects which inputs (input_ids, attention_mask, token_type_ids)
+    are supported by teacher and student models to ensure safe distillation.
+    """
+    
     def __init__(self, config: Dict[str, Any], teacher_model: torch.nn.Module, student_model: torch.nn.Module):
+        """
+        Initialize text classification task with automatic compatibility detection.
+        
+        Args:
+            config: Task configuration including num_classes, temperature, alpha
+            teacher_model: Pre-trained teacher model for distillation
+            student_model: Student model to be trained
+        """
         super().__init__(config)
         self.task_type = TaskType.TEXT_CLASSIFICATION
         self.num_classes = config.get('num_classes', 2)
@@ -16,26 +28,33 @@ class TextClassificationTask(BaseTask):
         self._teacher_model = teacher_model
         self._student_model = student_model
         
-        # FEATURE AVANZATA: Rilevamento automatico input supportati
+        # Automatic detection of supported inputs for both models
         self.teacher_supported_inputs = self._detect_supported_inputs(teacher_model, "Teacher")
         self.student_supported_inputs = self._detect_supported_inputs(student_model, "Student")
         self.common_inputs = self.teacher_supported_inputs & self.student_supported_inputs
         
-        print(f"[TEXT_TASK] ✅ Inizializzato con {self.num_classes} classi")
+        print(f"[TEXT_TASK] Initialized with {self.num_classes} classes")
         print(f"[TEXT_TASK] Teacher inputs: {sorted(self.teacher_supported_inputs)}")
         print(f"[TEXT_TASK] Student inputs: {sorted(self.student_supported_inputs)}")
-        print(f"[TEXT_TASK] 🎯 Common inputs: {sorted(self.common_inputs)}")
+        print(f"[TEXT_TASK] Common inputs: {sorted(self.common_inputs)}")
     
     def _detect_supported_inputs(self, model: torch.nn.Module, model_name: str) -> Set[str]:
         """
-        Rileva dinamicamente quali input supporta un modello
-        """
-        print(f"[DYNAMIC] Rilevando input per {model_name}...")
+        Dynamically detect which inputs a model supports through testing.
         
-        # Rileva device del modello
+        Args:
+            model: Model to test
+            model_name: Name for logging purposes
+            
+        Returns:
+            Set of supported input keys (e.g., 'input_ids', 'attention_mask')
+        """
+        print(f"[DYNAMIC] Detecting inputs for {model_name}...")
+        
+        # Detect model device
         model_device = next(model.parameters()).device
         
-        # Crea tensori base sul device corretto
+        # Create base tensors on correct device
         base_tensors = {
             'input_ids': torch.randint(0, 1000, (1, 10)).to(model_device),
             'attention_mask': torch.ones(1, 10).to(model_device),
@@ -45,29 +64,28 @@ class TextClassificationTask(BaseTask):
         supported_inputs = set()
         model.eval()
         
-        # ✅ FIX: Test input essenziali INSIEME (non separatamente)
+        # Test essential inputs together (standard for transformers)
         try:
             with torch.no_grad():
-                # Test input_ids + attention_mask insieme (standard per transformer)
                 _ = model(
                     input_ids=base_tensors['input_ids'],
                     attention_mask=base_tensors['attention_mask']
                 )
             supported_inputs.update(['input_ids', 'attention_mask'])
-            print(f"[DYNAMIC] ✅ {model_name} supporta: input_ids + attention_mask")
+            print(f"[DYNAMIC] {model_name} supports: input_ids + attention_mask")
         except Exception as e:
-            print(f"[DYNAMIC] ❌ {model_name} NON supporta input base: {e}")
+            print(f"[DYNAMIC] {model_name} does NOT support base inputs: {e}")
             
-            # Fallback: prova solo input_ids
+            # Fallback: try only input_ids
             try:
                 with torch.no_grad():
                     _ = model(input_ids=base_tensors['input_ids'])
                 supported_inputs.add('input_ids')
-                print(f"[DYNAMIC] ✅ {model_name} supporta: input_ids (solo)")
+                print(f"[DYNAMIC] {model_name} supports: input_ids (only)")
             except Exception as e2:
-                print(f"[DYNAMIC] ❌ {model_name} NON supporta nemmeno input_ids: {e2}")
+                print(f"[DYNAMIC] {model_name} does NOT support even input_ids: {e2}")
         
-        # ✅ FIX: Test token_type_ids AGGIUNTIVO (se ha già input base)
+        # Test token_type_ids as additional input (if has base inputs)
         if 'input_ids' in supported_inputs:
             try:
                 with torch.no_grad():
@@ -75,42 +93,59 @@ class TextClassificationTask(BaseTask):
                         'input_ids': base_tensors['input_ids'],
                         'token_type_ids': base_tensors['token_type_ids']
                     }
-                    # Aggiungi attention_mask se supportato
+                    # Add attention_mask if supported
                     if 'attention_mask' in supported_inputs:
                         test_inputs['attention_mask'] = base_tensors['attention_mask']
                     
                     _ = model(**test_inputs)
                 supported_inputs.add('token_type_ids')
-                print(f"[DYNAMIC] ✅ {model_name} supporta: token_type_ids")
+                print(f"[DYNAMIC] {model_name} supports: token_type_ids")
             except Exception as e:
-                print(f"[DYNAMIC] ❌ {model_name} NON supporta: token_type_ids - {e}")
+                print(f"[DYNAMIC] {model_name} does NOT support: token_type_ids - {e}")
         
         return supported_inputs
     
     def prepare_dataset(self, dataset_adapter) -> DataLoader:
         """
-        CRUCIALE: Prepara il dataset con input comuni rilevati automaticamente
+        Prepare dataset with automatically detected common inputs.
+        Sets supported inputs in the adapter to filter tokenizer output.
+        
+        Args:
+            dataset_adapter: Dataset adapter containing text data
+            
+        Returns:
+            DataLoader configured for text data
+            
+        Raises:
+            ValueError: If dataset is not in text mode
         """
         if dataset_adapter.mode != "text":
             raise ValueError("Dataset must be in text mode for TextClassificationTask")
         
-        # 🎯 FIX PRINCIPALE: Imposta gli input supportati nell'adapter
-        print(f"[TEXT_TASK] Impostando input supportati nell'adapter: {sorted(self.common_inputs)}")
+        # Set supported inputs in adapter for filtering
+        print(f"[TEXT_TASK] Setting supported inputs in adapter: {sorted(self.common_inputs)}")
         if hasattr(dataset_adapter, 'set_supported_inputs'):
             dataset_adapter.set_supported_inputs(self.common_inputs)
         else:
-            print(f"[WARNING] Dataset adapter non supporta set_supported_inputs")
+            print(f"[WARNING] Dataset adapter does not support set_supported_inputs")
         
         return dataset_adapter.get_text_loader()
     
     def forward_pass(self, model: torch.nn.Module, inputs) -> torch.Tensor:
         """
-        Forward pass avanzato con filtraggio automatico e gestione device
+        Execute forward pass with automatic input filtering and device management.
+        
+        Args:
+            model: Neural network model (teacher or student)
+            inputs: Input data (dictionary or tensor)
+            
+        Returns:
+            Model logits as torch.Tensor
         """
         model_device = next(model.parameters()).device
         
         if isinstance(inputs, dict):
-            # Sposta inputs sul device corretto
+            # Move inputs to correct device
             device_inputs = {}
             for k, v in inputs.items():
                 if isinstance(v, torch.Tensor):
@@ -118,19 +153,19 @@ class TextClassificationTask(BaseTask):
                 else:
                     device_inputs[k] = v
             
-            # SICUREZZA: Filtra input non supportati
+            # Filter unsupported inputs for safety
             filtered_inputs = self._safe_filter_inputs(device_inputs, model)
             
-            # Forward pass per modelli transformer
+            # Forward pass for transformer models
             outputs = model(**filtered_inputs)
             
-            # Estrai logits dall'output
+            # Extract logits from output
             if hasattr(outputs, 'logits'):
                 return outputs.logits
             else:
                 return outputs[0] if isinstance(outputs, (tuple, list)) else outputs
         else:
-            # Input diretto (meno comune per text)
+            # Direct input (less common for text)
             if isinstance(inputs, torch.Tensor):
                 inputs = inputs.to(model_device)
             outputs = model(inputs)
@@ -142,56 +177,67 @@ class TextClassificationTask(BaseTask):
     
     def _safe_filter_inputs(self, inputs: Dict[str, torch.Tensor], model: torch.nn.Module) -> Dict[str, torch.Tensor]:
         """
-        Filtro di sicurezza avanzato per evitare input non supportati
+        Advanced safety filter to prevent unsupported inputs from being passed to model.
+        
+        Args:
+            inputs: Dictionary of input tensors
+            model: Model to filter inputs for
+            
+        Returns:
+            Filtered dictionary containing only supported inputs
         """
+        # Determine which inputs this specific model supports
         if model is self._teacher_model:
             supported = self.teacher_supported_inputs
-            model_name = "Teacher"
         elif model is self._student_model:
             supported = self.student_supported_inputs
-            model_name = "Student"
         else:
-            # Usa input comuni come fallback
+            # Use common inputs as fallback
             supported = self.common_inputs
-            model_name = "Unknown"
         
         filtered = {}
         for key, value in inputs.items():
             if key in supported:
                 filtered[key] = value
-
-            #else:
-                #print(f"[SAFETY] Rimuovendo '{key}' per {model_name} (non supportato)")
         
-        # Assicurati che ci siano almeno input_ids e attention_mask
+        # Ensure at least essential inputs are present
         essential = ['input_ids', 'attention_mask']
         for key in essential:
             if key not in filtered and key in inputs:
                 filtered[key] = inputs[key]
-                #print(f"[SAFETY] Aggiunto input essenziale: {key}")
         
         return filtered
     
     def compute_distillation_loss(self, teacher_logits: torch.Tensor, 
-                                student_logits: torch.Tensor, 
-                                labels: torch.Tensor, 
-                                config: Dict[str, Any]) -> torch.Tensor:
+                                   student_logits: torch.Tensor, 
+                                   labels: torch.Tensor, 
+                                   config: Dict[str, Any]) -> torch.Tensor:
         """
-        Loss di distillazione ottimizzata per text classification
+        Calculate optimized distillation loss for text classification.
+        Combines soft distillation loss (KL divergence) with hard cross-entropy loss.
+        
+        Args:
+            teacher_logits: Teacher model output logits
+            student_logits: Student model output logits
+            labels: Ground truth labels
+            config: Configuration with temperature and alpha parameters
+            
+        Returns:
+            Combined distillation loss as torch.Tensor
         """
         import torch.nn.functional as F
         
-        # Assicurati che tutti i tensori siano sullo stesso device
+        # Ensure all tensors are on the same device
         if teacher_logits.device != student_logits.device:
             teacher_logits = teacher_logits.to(student_logits.device)
         if labels.device != student_logits.device:
             labels = labels.to(student_logits.device)
         
-        # Parametri di distillazione
+        # Distillation parameters
         temperature = config.get('temperature', 3.0)
         alpha = config.get('alpha', 0.8)
         
-        # Soft distillation loss (KL divergence)
+        # Soft distillation loss (KL divergence between teacher and student)
         soft_targets = F.softmax(teacher_logits / temperature, dim=1)
         soft_predictions = F.log_softmax(student_logits / temperature, dim=1)
         
@@ -201,17 +247,24 @@ class TextClassificationTask(BaseTask):
             reduction='batchmean'
         ) * (temperature ** 2)
         
-        # Hard loss (standard cross entropy)
+        # Hard loss (standard cross entropy with ground truth)
         student_loss = F.cross_entropy(student_logits, labels)
         
-        # Weighted combination
+        # Weighted combination of soft and hard losses
         total_loss = alpha * distillation_loss + (1 - alpha) * student_loss
         
         return total_loss
     
     def evaluate(self, model: torch.nn.Module, dataloader: DataLoader) -> Dict[str, float]:
         """
-        Evaluation avanzata con gestione input sicura e device management
+        Evaluate model with safe input handling and device management.
+        
+        Args:
+            model: Model to evaluate
+            dataloader: DataLoader with evaluation data
+            
+        Returns:
+            Dictionary with accuracy, correct predictions count, and total samples
         """
         model.eval()
         correct = 0
@@ -221,7 +274,7 @@ class TextClassificationTask(BaseTask):
         with torch.no_grad():
             for batch in dataloader:
                 try:
-                    # Prepara inputs spostando su device corretto
+                    # Prepare inputs by moving to correct device
                     inputs = {}
                     for k, v in batch.items():
                         if k != 'labels':
@@ -232,19 +285,19 @@ class TextClassificationTask(BaseTask):
                     
                     labels = batch['labels'].to(model_device)
                     
-                    # Usa forward_pass per consistenza e sicurezza
+                    # Use forward_pass for consistency and safety
                     logits = self.forward_pass(model, inputs)
                     predictions = torch.argmax(logits, dim=1)
                     
-                    # Calcola accuracy
+                    # Calculate accuracy
                     correct += (predictions == labels).sum().item()
                     total += labels.size(0)
                     
                 except Exception as e:
-                    print(f"[WARNING] Errore evaluation batch text: {e}")
+                    print(f"[WARNING] Text evaluation batch error: {e}")
                     continue
         
-        # Rimetti model in training mode
+        # Return model to training mode
         model.train()
         
         if total > 0:
@@ -256,21 +309,30 @@ class TextClassificationTask(BaseTask):
         else:
             return {'accuracy': 0.0, 'correct': 0, 'total': 0}
     
-    # =================== METODI LEGACY (per compatibilità) ===================
-    
     def get_teacher_model(self) -> torch.nn.Module:
-        """Ritorna il modello teacher (per compatibilità)"""
+        """
+        Retrieve the teacher model.
+        
+        Returns:
+            Teacher model instance
+        """
         return self._teacher_model
 
     def get_student_model(self) -> torch.nn.Module:
-        """Ritorna il modello student (per compatibilità)"""
+        """
+        Retrieve the student model.
+        
+        Returns:
+            Student model instance
+        """
         return self._student_model
-    
-    # =================== METODI HELPER AVANZATI ===================
     
     def get_tokenizer_info(self):
         """
-        Ritorna informazioni dettagliate sul tokenizer e modelli
+        Get detailed information about tokenizer and models.
+        
+        Returns:
+            Dictionary containing task info, model architecture details, and supported inputs
         """
         info = {
             'task_type': 'text_classification',
@@ -283,7 +345,7 @@ class TextClassificationTask(BaseTask):
             }
         }
         
-        # Cerca di inferire il tipo di modello dal teacher
+        # Try to infer model type from teacher
         if hasattr(self._teacher_model, 'config'):
             model_config = self._teacher_model.config
             if hasattr(model_config, 'model_type'):
@@ -291,7 +353,7 @@ class TextClassificationTask(BaseTask):
             if hasattr(model_config, 'vocab_size'):
                 info['vocab_size'] = model_config.vocab_size
         
-        # Informazioni sul student se disponibili
+        # Student information if available
         if hasattr(self._student_model, 'config'):
             model_config = self._student_model.config
             if hasattr(model_config, 'model_type'):
@@ -301,10 +363,14 @@ class TextClassificationTask(BaseTask):
     
     def check_model_compatibility(self) -> bool:
         """
-        Verifica avanzata di compatibilità tra teacher e student
+        Advanced compatibility check between teacher and student models.
+        Tests with dummy inputs using only common supported inputs.
+        
+        Returns:
+            True if models are compatible (same output shape), False otherwise
         """
         try:
-            # Test con input dummy usando solo input comuni
+            # Test with dummy input using only common inputs
             dummy_input = {}
             if 'input_ids' in self.common_inputs:
                 dummy_input['input_ids'] = torch.randint(0, 1000, (2, 10))
@@ -314,50 +380,53 @@ class TextClassificationTask(BaseTask):
                 dummy_input['token_type_ids'] = torch.zeros(2, 10, dtype=torch.long)
             
             if not dummy_input:
-                print(f"[TEXT_TASK] ❌ Nessun input comune trovato!")
+                print(f"[TEXT_TASK] No common inputs found!")
                 return False
             
             teacher_logits = self.forward_pass(self._teacher_model, dummy_input)
             student_logits = self.forward_pass(self._student_model, dummy_input)
             
-            # Verifica shape compatibility
+            # Verify shape compatibility
             if teacher_logits.shape == student_logits.shape:
-                print(f"[TEXT_TASK] ✅ Modelli compatibili: {teacher_logits.shape}")
-                print(f"[TEXT_TASK] ✅ Input comuni utilizzati: {sorted(dummy_input.keys())}")
+                print(f"[TEXT_TASK] Models compatible: {teacher_logits.shape}")
+                print(f"[TEXT_TASK] Common inputs used: {sorted(dummy_input.keys())}")
                 return True
             else:
-                print(f"[TEXT_TASK] ❌ Shape mismatch: Teacher {teacher_logits.shape} vs Student {student_logits.shape}")
+                print(f"[TEXT_TASK] Shape mismatch: Teacher {teacher_logits.shape} vs Student {student_logits.shape}")
                 return False
                 
         except Exception as e:
-            print(f"[TEXT_TASK] ❌ Errore compatibilità: {e}")
+            print(f"[TEXT_TASK] Compatibility error: {e}")
             return False
     
     def debug_compatibility(self):
         """
-        Helper completo per debug della compatibilità con diagnostics dettagliate
+        Complete compatibility debug helper with detailed diagnostics.
+        
+        Returns:
+            Dictionary containing compatibility test results and recommendations
         """
-        print(f"\n🔍 DEBUG COMPATIBILITÀ COMPLETO")
+        print(f"\nDEBUG COMPATIBILITY")
         print(f"=" * 50)
-        print(f"Teacher supporta: {sorted(self.teacher_supported_inputs)}")
-        print(f"Student supporta: {sorted(self.student_supported_inputs)}")
-        print(f"Input comuni: {sorted(self.common_inputs)}")
-        print(f"Num classi: {self.num_classes}")
+        print(f"Teacher supports: {sorted(self.teacher_supported_inputs)}")
+        print(f"Student supports: {sorted(self.student_supported_inputs)}")
+        print(f"Common inputs: {sorted(self.common_inputs)}")
+        print(f"Number of classes: {self.num_classes}")
         
-        # Analisi input specifici
+        # Analyze specific inputs
         if 'token_type_ids' not in self.common_inputs:
-            print("✅ token_type_ids ESCLUSO dai comuni (raccomandato per compatibilità)")
+            print("token_type_ids EXCLUDED from common (recommended for compatibility)")
         else:
-            print("⚠️ token_type_ids INCLUSO nei comuni (potrebbe causare errori)")
+            print("WARNING: token_type_ids INCLUDED in common (may cause errors)")
         
-        # Test compatibilità
+        # Test compatibility
         compatibility = self.check_model_compatibility()
-        print(f"Test compatibilità: {'✅ PASS' if compatibility else '❌ FAIL'}")
+        print(f"Compatibility test: {'PASS' if compatibility else 'FAIL'}")
         
-        # Diagnostics aggiuntive
+        # Additional diagnostics
         essential_inputs = {'input_ids', 'attention_mask'}
         has_essentials = essential_inputs.issubset(self.common_inputs)
-        print(f"Input essenziali presenti: {'✅ SÌ' if has_essentials else '❌ NO'}")
+        print(f"Essential inputs present: {'YES' if has_essentials else 'NO'}")
         
         print(f"=" * 50)
         return {
@@ -369,7 +438,10 @@ class TextClassificationTask(BaseTask):
     
     def get_training_info(self) -> Dict[str, Any]:
         """
-        Informazioni utili per il training setup
+        Get useful information for training setup.
+        
+        Returns:
+            Dictionary containing task configuration, compatibility info, and recommended settings
         """
         return {
             'task_type': self.task_type,

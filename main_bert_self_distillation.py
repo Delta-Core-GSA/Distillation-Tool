@@ -1,17 +1,12 @@
-##########
-#Main di esempio per vedere se va il tutto
-#######
-
 import os
 import torch
 import pandas as pd
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from datasets import load_dataset
-from utils.save_model import save_model
+from utils.save_model import save_model_to_pt
 from utils.TaskDir import TaskDir
 from utils.directory import ProjectStructure
 from distiller import DistillerBridge
-from adapters.dataset_adapter import count_classes
 
 def save_sst2_as_csv(csv_path, split="train"):
     """
@@ -42,25 +37,24 @@ if __name__ == "__main__":
     # 2. Salva il modello teacher (e student) da Hugging Face
     os.makedirs(os.path.dirname(models_relative_path), exist_ok=True)
 
-    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=count_classes(dataset_relative_path))
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     if not os.path.exists(models_relative_path):
         print("Salvataggio modello Hugging Face BERT...")
-        save_model(model, models_relative_path)
+        save_model_to_pt(model, models_relative_path)
 
     # 3. Percorso di output per la distillazione
     project = ProjectStructure()
     output_model_path = project.create_distillation_folder("bertbase", "sst2")
 
-    # 4. Esegui distillazione con strategia specificata
+    # 4. Esegui distillazione
     bridge = DistillerBridge(
         teacher_path=models_relative_path,
-        student_path=models_relative_path,  # Stesso modello per ora
+        student_path=models_relative_path,
         dataset_path=dataset_relative_path,
         output_path=output_model_path,
-        distillation_strategy="hard_soft",  # Specifica la strategia
-        tokenizer_name=model_name
+        tokenizer_name='bert-base-uncased'  # opzionale, se `DistillerBridge` lo usa
     )
 
     bridge.distill()

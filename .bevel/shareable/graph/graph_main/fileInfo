@@ -1,0 +1,473 @@
+{
+  "fileInfos" : [ {
+    "path" : "adapters/dataset_adapter.py",
+    "modificationInfo" : {
+      "contentHash" : -595298476,
+      "lastModified" : 1760108396741
+    },
+    "linesOfCode" : 665
+  }, {
+    "path" : "adapters/model_adapter.py",
+    "modificationInfo" : {
+      "contentHash" : 1593995836,
+      "lastModified" : 1760108419287
+    },
+    "linesOfCode" : 36
+  }, {
+    "path" : "config/__init__.py",
+    "modificationInfo" : {
+      "contentHash" : -226633454,
+      "lastModified" : 1747128314014
+    },
+    "linesOfCode" : 3
+  }, {
+    "path" : "config/config.py",
+    "modificationInfo" : {
+      "contentHash" : -2041015328,
+      "lastModified" : 1748513287805
+    },
+    "linesOfCode" : 32
+  }, {
+    "path" : "config/constants.py",
+    "modificationInfo" : {
+      "contentHash" : 879617447,
+      "lastModified" : 1747759257098
+    },
+    "linesOfCode" : 5
+  }, {
+    "path" : "dataset_adapter/implementation.py",
+    "modificationInfo" : {
+      "contentHash" : 1060299303,
+      "lastModified" : 1748519973171
+    },
+    "linesOfCode" : 82
+  }, {
+    "path" : "dataset_adapter/interfaces.py",
+    "modificationInfo" : {
+      "contentHash" : -736781538,
+      "lastModified" : 1748512193736
+    },
+    "linesOfCode" : 40
+  }, {
+    "path" : "dataset_adapter/modular_dataset_adapter.py",
+    "modificationInfo" : {
+      "contentHash" : -1502732161,
+      "lastModified" : 1748519963328
+    },
+    "linesOfCode" : 120
+  }, {
+    "path" : "dataset_adapter/processor.py",
+    "modificationInfo" : {
+      "contentHash" : 1446587916,
+      "lastModified" : 1748519984907
+    },
+    "linesOfCode" : 123
+  }, {
+    "path" : "dataset_by_tasking/base_task.py",
+    "modificationInfo" : {
+      "contentHash" : -1634047364,
+      "lastModified" : 1760108694970
+    },
+    "linesOfCode" : 128
+  }, {
+    "path" : "dataset_by_tasking/image_classification.py",
+    "modificationInfo" : {
+      "contentHash" : 748845039,
+      "lastModified" : 1760111672929
+    },
+    "linesOfCode" : 171
+  }, {
+    "path" : "dataset_by_tasking/tabular_classification.py",
+    "modificationInfo" : {
+      "contentHash" : 1403285953,
+      "lastModified" : 1760111940085
+    },
+    "linesOfCode" : 131
+  }, {
+    "path" : "dataset_by_tasking/task_factory.py",
+    "modificationInfo" : {
+      "contentHash" : 1022071972,
+      "lastModified" : 1748530378986
+    },
+    "linesOfCode" : 38
+  }, {
+    "path" : "dataset_by_tasking/task_type.py",
+    "modificationInfo" : {
+      "contentHash" : -267650415,
+      "lastModified" : 1748530378986
+    },
+    "linesOfCode" : 11
+  }, {
+    "path" : "dataset_by_tasking/task_type_detector.py",
+    "modificationInfo" : {
+      "contentHash" : 1458284701,
+      "lastModified" : 1760112040001
+    },
+    "linesOfCode" : 174
+  }, {
+    "path" : "dataset_by_tasking/text_classification.py",
+    "modificationInfo" : {
+      "contentHash" : 1979939914,
+      "lastModified" : 1760112256728
+    },
+    "linesOfCode" : 460
+  }, {
+    "path" : "dataset_by_tasking/text_generation.py",
+    "modificationInfo" : {
+      "contentHash" : -661650181,
+      "lastModified" : 1748530378986
+    },
+    "linesOfCode" : 65
+  }, {
+    "path" : "distiller.py",
+    "modificationInfo" : {
+      "contentHash" : 773562874,
+      "lastModified" : 1760113031454
+    },
+    "linesOfCode" : 394
+  }, {
+    "path" : "factories/adapter_factory.py",
+    "modificationInfo" : {
+      "contentHash" : 1409244396,
+      "lastModified" : 1760112647263
+    },
+    "linesOfCode" : 167
+  }, {
+    "path" : "main.py",
+    "modificationInfo" : {
+      "contentHash" : 105726870,
+      "lastModified" : 1749460320737
+    },
+    "linesOfCode" : 769
+  }, {
+    "path" : "main_bert_self_distillation.py",
+    "modificationInfo" : {
+      "contentHash" : -1654571077,
+      "lastModified" : 1760111779203
+    },
+    "linesOfCode" : 60
+  }, {
+    "path" : "main_deberta_distillation.py",
+    "modificationInfo" : {
+      "contentHash" : 1493575473,
+      "lastModified" : 1760114179499
+    },
+    "linesOfCode" : 85
+  }, {
+    "path" : "main_electra_distillation.py",
+    "modificationInfo" : {
+      "contentHash" : -2002930440,
+      "lastModified" : 1760114215535
+    },
+    "linesOfCode" : 85
+  }, {
+    "path" : "main_testing.py",
+    "modificationInfo" : {
+      "contentHash" : 77827748,
+      "lastModified" : 1748355897155
+    },
+    "linesOfCode" : 66
+  }, {
+    "path" : "main_testing_image_classification.py",
+    "modificationInfo" : {
+      "contentHash" : -2090238345,
+      "lastModified" : 1748359832473
+    },
+    "linesOfCode" : 338
+  }, {
+    "path" : "main_testing_image_classification_cnn.py",
+    "modificationInfo" : {
+      "contentHash" : 521338460,
+      "lastModified" : 1748361125022
+    },
+    "linesOfCode" : 787
+  }, {
+    "path" : "main_testing_text_classification_bert.py",
+    "modificationInfo" : {
+      "contentHash" : -1554282295,
+      "lastModified" : 1748439361375
+    },
+    "linesOfCode" : 348
+  }, {
+    "path" : "main_testing_text_classification_different_arch.py",
+    "modificationInfo" : {
+      "contentHash" : -755679893,
+      "lastModified" : 1748442469656
+    },
+    "linesOfCode" : 387
+  }, {
+    "path" : "main_testing_text_classification_roberta.py",
+    "modificationInfo" : {
+      "contentHash" : 823458151,
+      "lastModified" : 1748440410624
+    },
+    "linesOfCode" : 521
+  }, {
+    "path" : "provider/custom_task_handler.py",
+    "modificationInfo" : {
+      "contentHash" : -821506021,
+      "lastModified" : 1748525209313
+    },
+    "linesOfCode" : 544
+  }, {
+    "path" : "provider/distillation_component_factory.py",
+    "modificationInfo" : {
+      "contentHash" : 584304425,
+      "lastModified" : 1748520012653
+    },
+    "linesOfCode" : 74
+  }, {
+    "path" : "provider/distillation_config_builder.py",
+    "modificationInfo" : {
+      "contentHash" : 1448526561,
+      "lastModified" : 1748514670698
+    },
+    "linesOfCode" : 42
+  }, {
+    "path" : "provider/distiller_bridge.py",
+    "modificationInfo" : {
+      "contentHash" : 720235958,
+      "lastModified" : 1748525250989
+    },
+    "linesOfCode" : 168
+  }, {
+    "path" : "provider/interfaces.py",
+    "modificationInfo" : {
+      "contentHash" : -1741341400,
+      "lastModified" : 1748513601809
+    },
+    "linesOfCode" : 28
+  }, {
+    "path" : "provider/providers.py",
+    "modificationInfo" : {
+      "contentHash" : 1324453533,
+      "lastModified" : 1748519925126
+    },
+    "linesOfCode" : 53
+  }, {
+    "path" : "provider/task_provider.py",
+    "modificationInfo" : {
+      "contentHash" : 1373717146,
+      "lastModified" : 1748520036170
+    },
+    "linesOfCode" : 46
+  }, {
+    "path" : "provider/task_type_provieder.py",
+    "modificationInfo" : {
+      "contentHash" : 869308521,
+      "lastModified" : 1760112769263
+    },
+    "linesOfCode" : 86
+  }, {
+    "path" : "resnet_knowledge_distillation_cifar10.py",
+    "modificationInfo" : {
+      "contentHash" : 1444601709,
+      "lastModified" : 1749459928552
+    },
+    "linesOfCode" : 815
+  }, {
+    "path" : "resnet_knowledge_distillation_imagenet.py",
+    "modificationInfo" : {
+      "contentHash" : 731917898,
+      "lastModified" : 1748508735728
+    },
+    "linesOfCode" : 453
+  }, {
+    "path" : "setup_bert.py",
+    "modificationInfo" : {
+      "contentHash" : 33478508,
+      "lastModified" : 1748361685545
+    },
+    "linesOfCode" : 322
+  }, {
+    "path" : "setup_different_model_architecture.py",
+    "modificationInfo" : {
+      "contentHash" : 1697639165,
+      "lastModified" : 1748443808674
+    },
+    "linesOfCode" : 657
+  }, {
+    "path" : "setup_roberta.py",
+    "modificationInfo" : {
+      "contentHash" : -1885730228,
+      "lastModified" : 1748440857028
+    },
+    "linesOfCode" : 368
+  }, {
+    "path" : "utils/TaskDir.py",
+    "modificationInfo" : {
+      "contentHash" : -1421864921,
+      "lastModified" : 1747045530246
+    },
+    "linesOfCode" : 12
+  }, {
+    "path" : "utils/__init__.py",
+    "modificationInfo" : {
+      "contentHash" : 342590263,
+      "lastModified" : 1747045492882
+    },
+    "linesOfCode" : 18
+  }, {
+    "path" : "utils/custom_logger.py",
+    "modificationInfo" : {
+      "contentHash" : 1715349113,
+      "lastModified" : 1747044858526
+    },
+    "linesOfCode" : 47
+  }, {
+    "path" : "utils/directory.py",
+    "modificationInfo" : {
+      "contentHash" : 411157964,
+      "lastModified" : 1747776639864
+    },
+    "linesOfCode" : 64
+  }, {
+    "path" : "utils/energy_mesurement_wrapper.py",
+    "modificationInfo" : {
+      "contentHash" : -1385539985,
+      "lastModified" : 1747044535788
+    },
+    "linesOfCode" : 155
+  }, {
+    "path" : "utils/flops_tracker.py",
+    "modificationInfo" : {
+      "contentHash" : -1487866754,
+      "lastModified" : 1747028832395
+    },
+    "linesOfCode" : 43
+  }, {
+    "path" : "utils/save_model.py",
+    "modificationInfo" : {
+      "contentHash" : 672781590,
+      "lastModified" : 1760112929605
+    },
+    "linesOfCode" : 39
+  }, {
+    "path" : "utils/singleton.py",
+    "modificationInfo" : {
+      "contentHash" : -1230288654,
+      "lastModified" : 1747028832395
+    },
+    "linesOfCode" : 9
+  }, {
+    "path" : "vecchi_main/main.py",
+    "modificationInfo" : {
+      "contentHash" : 105726870,
+      "lastModified" : 1749460320737
+    },
+    "linesOfCode" : 769
+  }, {
+    "path" : "vecchi_main/main_testing.py",
+    "modificationInfo" : {
+      "contentHash" : 77827748,
+      "lastModified" : 1748355897155
+    },
+    "linesOfCode" : 66
+  }, {
+    "path" : "vecchi_main/main_testing_image_classification_cnn.py",
+    "modificationInfo" : {
+      "contentHash" : 521338460,
+      "lastModified" : 1748361125022
+    },
+    "linesOfCode" : 787
+  }, {
+    "path" : "vecchi_main/main_testing_text_classification_different_arch.py",
+    "modificationInfo" : {
+      "contentHash" : -755679893,
+      "lastModified" : 1748442469656
+    },
+    "linesOfCode" : 387
+  }, {
+    "path" : "vecchi_main/main_testing_text_classification_roberta.py",
+    "modificationInfo" : {
+      "contentHash" : 823458151,
+      "lastModified" : 1748440410624
+    },
+    "linesOfCode" : 521
+  }, {
+    "path" : "vecchi_main/resnet_knowledge_distillation_cifar10.py",
+    "modificationInfo" : {
+      "contentHash" : 1444601709,
+      "lastModified" : 1749459928552
+    },
+    "linesOfCode" : 815
+  }, {
+    "path" : "vecchi_main/resnet_knowledge_distillation_imagenet.py",
+    "modificationInfo" : {
+      "contentHash" : 731917898,
+      "lastModified" : 1748508735728
+    },
+    "linesOfCode" : 453
+  }, {
+    "path" : "vecchi_main/setup_bert.py",
+    "modificationInfo" : {
+      "contentHash" : 33478508,
+      "lastModified" : 1748361685545
+    },
+    "linesOfCode" : 322
+  }, {
+    "path" : "vecchi_main/setup_different_model_architecture.py",
+    "modificationInfo" : {
+      "contentHash" : 1697639165,
+      "lastModified" : 1748443808674
+    },
+    "linesOfCode" : 657
+  }, {
+    "path" : "vecchi_main/setup_roberta.py",
+    "modificationInfo" : {
+      "contentHash" : -1885730228,
+      "lastModified" : 1748440857028
+    },
+    "linesOfCode" : 368
+  }, {
+    "path" : "vecchie_distillazioni/benchmark_resnet.py",
+    "modificationInfo" : {
+      "contentHash" : -1894460727,
+      "lastModified" : 1747044706934
+    },
+    "linesOfCode" : 149
+  }, {
+    "path" : "vecchie_distillazioni/benchmark_resnet_all_models.py",
+    "modificationInfo" : {
+      "contentHash" : 832015425,
+      "lastModified" : 1747243340824
+    },
+    "linesOfCode" : 155
+  }, {
+    "path" : "vecchie_distillazioni/bert_self_distillation.py",
+    "modificationInfo" : {
+      "contentHash" : 812442079,
+      "lastModified" : 1747148279600
+    },
+    "linesOfCode" : 60
+  }, {
+    "path" : "vecchie_distillazioni/resnet18_self_distillazion.py",
+    "modificationInfo" : {
+      "contentHash" : -51961707,
+      "lastModified" : 1747129773672
+    },
+    "linesOfCode" : 80
+  }, {
+    "path" : "vecchie_distillazioni/resnet_knowledge_distillastion_imagenet.py",
+    "modificationInfo" : {
+      "contentHash" : -1362738388,
+      "lastModified" : 1747824334784
+    },
+    "linesOfCode" : 272
+  }, {
+    "path" : "vecchie_distillazioni/resnet_x_knowledge_distillation.py",
+    "modificationInfo" : {
+      "contentHash" : 1039566122,
+      "lastModified" : 1747775780903
+    },
+    "linesOfCode" : 150
+  }, {
+    "path" : "vecchie_distillazioni/vit-base_self_distillation.py",
+    "modificationInfo" : {
+      "contentHash" : -731346479,
+      "lastModified" : 1747063820374
+    },
+    "linesOfCode" : 69
+  } ],
+  "appVersion" : "1.3.0"
+}

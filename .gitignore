@@ -5,3 +5,9 @@ logs/
 models/
 saved_models/
 */__pycache__/
+
+
+vecchi_main/
+vecchie_distillazioni/
+
+.bevel/do_not_share

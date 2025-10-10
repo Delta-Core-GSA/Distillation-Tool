@@ -3,64 +3,95 @@ import torch
 from torch.utils.data import DataLoader
 from typing import Dict, Any
 
+
 class BaseTask(ABC):
-    """Interfaccia base per tutte le task di distillazione"""
+    """
+    Base interface for all distillation tasks.
+    Defines the contract that all task implementations must follow.
+    """
     
     def __init__(self, config: Dict[str, Any]):
+        """
+        Initialize base task with configuration.
+        
+        Args:
+            config: Task configuration dictionary containing parameters like num_classes
+        """
         self.config = config
         self.task_type = None
-        self.num_classes = config.get('num_classes', 2)  # Default generico
+        self.num_classes = config.get('num_classes', 2)
         
     @abstractmethod
     def prepare_dataset(self, dataset_adapter) -> DataLoader:
-        """Prepara il dataset specifico per questa task"""
+        """
+        Prepare task-specific dataset and return DataLoader.
+        
+        Args:
+            dataset_adapter: Dataset adapter containing the data
+            
+        Returns:
+            DataLoader configured for this task
+        """
         pass
     
     @abstractmethod
     def forward_pass(self, model: torch.nn.Module, inputs) -> torch.Tensor:
         """
-        NUOVO: Esegue forward pass per il modello specifico della task
-        Gestisce le differenze tra architetture diverse
+        Execute forward pass for the specific model.
+        Handles differences between various architectures.
         
         Args:
-            model: Il modello (teacher o student)
-            inputs: Input formattati per il modello
+            model: The model (teacher or student)
+            inputs: Model-formatted inputs
             
         Returns:
-            torch.Tensor: Logits del modello
+            Model logits as torch.Tensor
         """
         pass
     
     @abstractmethod
     def compute_distillation_loss(self, teacher_logits: torch.Tensor, 
-                                student_logits: torch.Tensor, 
-                                labels: torch.Tensor, 
-                                config: Dict[str, Any]) -> torch.Tensor:
+                                   student_logits: torch.Tensor, 
+                                   labels: torch.Tensor, 
+                                   config: Dict[str, Any]) -> torch.Tensor:
         """
-        AGGIORNATO: Calcola la loss di distillazione specifica per questa task
+        Calculate task-specific distillation loss.
         
         Args:
-            teacher_logits: Output del teacher model
-            student_logits: Output del student model  
+            teacher_logits: Teacher model outputs
+            student_logits: Student model outputs
             labels: Ground truth labels
-            config: Configurazione con temperature, alpha, etc.
+            config: Configuration with temperature, alpha, and other parameters
             
         Returns:
-            torch.Tensor: Loss di distillazione
+            Computed distillation loss as torch.Tensor
         """
         pass
     
     @abstractmethod
     def evaluate(self, model: torch.nn.Module, dataloader: DataLoader) -> Dict[str, float]:
-        """Valuta il modello su questa task"""
+        """
+        Evaluate model performance on this task.
+        
+        Args:
+            model: Model to evaluate
+            dataloader: DataLoader with evaluation data
+            
+        Returns:
+            Dictionary mapping metric names to values
+        """
         pass
-    
-    # =================== METODI HELPER OPZIONALI ===================
     
     def get_teacher_model(self) -> torch.nn.Module:
         """
-        OPZIONALE: Ritorna il modello teacher se stored nella task
-        Override se necessario
+        Retrieve the teacher model if stored in the task instance.
+        Optional method that can be overridden in subclasses.
+        
+        Returns:
+            Teacher model instance
+            
+        Raises:
+            NotImplementedError: If teacher model is not stored or method not implemented
         """
         if hasattr(self, '_teacher_model'):
             return self._teacher_model
@@ -69,8 +100,14 @@ class BaseTask(ABC):
     
     def get_student_model(self) -> torch.nn.Module:
         """
-        OPZIONALE: Ritorna il modello student se stored nella task
-        Override se necessario
+        Retrieve the student model if stored in the task instance.
+        Optional method that can be overridden in subclasses.
+        
+        Returns:
+            Student model instance
+            
+        Raises:
+            NotImplementedError: If student model is not stored or method not implemented
         """
         if hasattr(self, '_student_model'):
             return self._student_model
@@ -79,7 +116,10 @@ class BaseTask(ABC):
     
     def get_task_info(self) -> Dict[str, Any]:
         """
-        HELPER: Ritorna informazioni sulla task
+        Get task information and configuration.
+        
+        Returns:
+            Dictionary containing task type, number of classes, and configuration
         """
         return {
             'task_type': self.task_type.value if self.task_type else 'unknown',
