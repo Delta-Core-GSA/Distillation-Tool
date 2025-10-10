@@ -1,0 +1,7 @@
+venv/
+data/
+datasets/
+logs/
+models/
+saved_models/
+*/__pycache__/

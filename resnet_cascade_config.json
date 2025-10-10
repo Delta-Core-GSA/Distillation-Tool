@@ -1,0 +1,34 @@
+{
+  "experiment_name": "resnet_cascade_cifar100_experiment",
+  "description": "Distillazione a cascata ResNet-152 -> 101,50,34,18 con CIFAR-100 completo",
+  "cascade_config": {
+    "teacher_model": "microsoft/resnet-152",
+    "student_models": [
+      "microsoft/resnet-101",
+      "microsoft/resnet-50",
+      "microsoft/resnet-34",
+      "microsoft/resnet-18"
+    ],
+    "reset_teacher": true
+  },
+  "dataset": {
+    "name": "cifar100",
+    "csv_path": "./datasets/CIFAR100_full/train.csv",
+    "tokenizer_name": null,
+    "max_samples": null,
+    "batch_size": 32
+  },
+  "distillation": {
+    "temperature": 2.0,
+    "alpha": 0.7,
+    "learning_rate": 0.0001,
+    "epochs": 5,
+    "eval_every": 1
+  },
+  "output_path": "experiments/resnet_cascade_cifar100/",
+  "advanced_options": {
+    "use_modern_architecture": true,
+    "save_intermediate_models": true,
+    "generate_cascade_report": true
+  }
+}

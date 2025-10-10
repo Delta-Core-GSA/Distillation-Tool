@@ -1,0 +1,56 @@
+{
+  "experiment_name": "resnet_distillation_cifar10",
+  "description": "resnet test",
+  
+  "dataset": {
+    "csv_path": "datasets/CIFAR10/train.csv",
+    "tokenizer_name": null,
+    "max_samples": 1000,
+    "batch_size": 16,
+    "imagenet_mapping_path": null
+  },
+  
+  "teacher": {
+    "model_path": "models/pretrained/teacher_resnet150_imagenet.pt",
+    "device": "cuda",
+    "load_in_8bit": false
+  },
+  
+  "student": {
+    "model_path": "models/pretrained/resnet18_imagenet.pt", 
+    "device": "cuda",
+    "load_in_8bit": false
+  },
+  
+  "task": {
+    "num_classes": 2,
+    "temperature": 4.0,
+    "alpha": 0.7,
+    "learning_rate": 2e-5,
+    "epochs": 3
+  },
+  
+  "output_path": "experiments/bert_distillation_test/run_001",
+  "eval_every": 1,
+  
+  "advanced_options": {
+    "gradient_checkpointing": false,
+    "mixed_precision": false,
+    "custom_task_provider": null,
+    "save_intermediate_checkpoints": true,
+    "early_stopping_patience": null
+  },
+  
+  "logging": {
+    "log_level": "INFO",
+    "save_logs": true,
+    "log_dir": "experiments/bert_distillation_test/logs"
+  },
+  
+  "experiment_tracking": {
+    "track_metrics": true,
+    "save_plots": true,
+    "wandb_project": null,
+    "tensorboard_log_dir": "experiments/bert_distillation_test/tensorboard"
+  }
+}
