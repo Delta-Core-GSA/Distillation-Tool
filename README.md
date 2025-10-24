@@ -9,8 +9,8 @@ This project represents an exploration of generalized knowledge distillation acr
 ## Installation
 ```bash
 # Clone repository
-git clone <repository-url>
-cd <repository-name>
+git clone <https://github.com/Delta-Core-GSA/Distillation-Tool>
+cd <Distillation-Tool>
 
 # Create virtual environment
 python -m venv venv
