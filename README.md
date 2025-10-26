@@ -1,10 +1,10 @@
 # Knowledge Distillation Framework
 
-A flexible PyTorch-based framework for knowledge distillation supporting image and text classification tasks with automatic task detection, model compatibility handling, modular adapters for datasets and models, task-specific distillation strategies, native HuggingFace transformer support with automatic tokenizer compatibility detection, and built-in CodeCarbon integration for energy consumption monitoring.mption
+A flexible PyTorch-based framework for knowledge distillation supporting image and text classification tasks with automatic task detection, model compatibility handling, modular adapters for datasets and models, task-specific distillation strategies, native HuggingFace transformer support with automatic tokenizer compatibility detection, and built-in CodeCarbon integration for energy consumption monitoring.
 
 ## Project Status
 
-This project represents an exploration of generalized knowledge distillation across diverse architectures and task types. While the core framework successfully achieves fully automated distillation across heterogeneous models proved more complex than initially anticipated due to architectural incompatibilities. The codebase provides a solid foundation for task-specific distillation implementations and may serve as a reference for future work in this domain.
+This project represents an exploration of generalized knowledge distillation across diverse architectures and task types. While the core framework successfully achieves fully automated distillation across heterogeneous models, it has proved more complex than initially anticipated due to architectural incompatibilities. The codebase provides a solid foundation for task-specific distillation implementations and may serve as a reference for future work in this domain.
 
 ## Installation
 ```bash
